@@ -140,6 +140,23 @@ class FormBuilder extends \Collective\Html\FormBuilder {
 	}
 
 
+	public function setOpen( $label, $required ){
+		$label = isset($required) ? $label . ' ' . self::$requiredLabel : $label;
+
+		return '
+		<div class="row is-form-row">
+			<div class="is-form-label-holder">
+				'.$label.'
+			</div>
+			<div class="is-form-widget-holder">';
+	}
+	public function setClose(){
+		return '
+			</div>
+        </div>';
+	}
+
+
 	public function textSet($name, $options = [], $value = null){
 		return self::inputSet('text', $name, $value, $options);
 	}
@@ -192,6 +209,153 @@ class FormBuilder extends \Collective\Html\FormBuilder {
 		$input = isset($customInput) ? $customInput : parent::input($type, $name, $value, $options);
 		return self::makeSet($label, $input);
 	}
+
+
+
+	public function textareaSet($name, $options = [], $value = null){
+		$customInput = self::textarea($name, $value, $options);
+		return self::inputSet('textarea', $name, $value, $options, $customInput);
+	}
+
+
+	public function checkboxSet($name, $value = 1, $checked = null, $options = []){
+		$input = self::constructCheckableWithinLabel('checkbox', $name, $value, $checked, $options);
+		return self::makeSet('', $input);
+	}
+
+	public function radioSet($name, $value = 1, $checked = null, $options = []){
+		$input = self::constructCheckableWithinLabel('radio', $name, $value, $checked, $options);
+		return self::makeSet('', $input);
+	}
+
+
+	public function radioGroupSet($name, $list = [], $options = [], $selected = null){
+		$options = $this->converter->convert(Helper::getFormAttribute($name)) + $options;
+
+		$labelText = isset($options['label']) ? $options['label'] : null;
+		$requiredLabel = isset($options['data-rule-required']) ? self::$requiredLabel : '';
+
+		$label = self::label($name, $labelText, [], $requiredLabel);
+
+		$input = '';
+		foreach( $list as $value => $itemLabel ){
+			$checked = $selected == $value ? true : false;
+
+			// make sure that the right name is displayed with each item
+			$tempOptions = array_merge($options, ['label' => $itemLabel]);
+
+			$input .= self::constructCheckableWithinLabel('radio', $name, $value, $checked, $tempOptions)."\n";
+		}
+
+		return self::makeSet($label, $input);
+	}
+
+
+
+	public function selectSet($name, $list = [], $options = [], $selected = null){
+		$customInput = self::select($name, $list, $selected, $options);
+		return self::inputSet('select', $name, $selected, $options, $customInput);
+	}
+
+	public function selectRangeSet($name, $begin, $end, $options = [], $selected = null){
+		$customInput = self::selectRange($name, $begin, $end, $selected, $options);
+		return self::inputSet('select', $name, $selected, $options, $customInput);
+	}
+
+	public function selectMonthSet($name, $options = [], $selected = null, $format = '%B'){
+		$customInput = self::selectMonth($name, $selected, $options, $format);
+		return self::inputSet('select', $name, $selected, $options, $customInput);
+	}
+
+
+
+
+	public function buttonSet($value = null, $options = []){
+		$customInput = self::button($value, $options);
+		return self::inputSet('button', '', $value, $options, $customInput);
+	}
+	public function submitSet($value = null, $options = []){
+		$customInput = self::submit($value, $options);
+		return self::inputSet('submit', '', $value, $options, $customInput);
+	}
+
+
+
+	public function set( $name, $elementsClosure, $options = []){
+		ob_start();
+		$elementsClosure($this);
+		$output = ob_get_contents(); ob_end_clean();
+
+		//return $output;
+
+
+		return self::makeSet($name, $output);
+
+		//dd($elementsClosure);
+	}
+
+
+
+
+	/**
+	 * Create a submit button element. Override for FormBuilder::submit so that it always
+	 * shows a button element
+	 *
+	 * @param  string $value
+	 * @param  array  $options
+	 *
+	 * @return \Illuminate\Support\HtmlString
+	 */
+	public function submit($value = null, $options = [])
+	{
+		$options['type'] = 'submit';
+		return $this->button($value, $options);
+	}
+
+
+
+
+
+
+	private function constructLabelString($name, $options = [])
+	{
+		$labelText = isset($options['label']) ? $options['label'] : null;
+		$value = e($this->formatLabel($name, $labelText));
+		$requiredLabel = isset($options['data-rule-required']) ? self::$requiredLabel : '';
+
+		if( $requiredLabel ) {
+			return $value . ' ' . $requiredLabel;
+		}
+		else{
+			return $value;
+		}
+	}
+
+	private function constructCheckableWithinLabel($type, $name, $value = 1, $checked = null, $options = []){
+		$customInput = self::checkable($type, $name, $value, $checked, $options);
+
+		return '<label>'.$customInput.' '.self::constructLabelString($name, $options).'</label>';
+
+	}
+
+
+
+
+
+
+	/*
+	public function selectSet($name, $list = [], $selected = null, $options = [])
+	{
+		$options = $this->converter->convert(Helper::getFormAttribute($name)) + $options;
+		return parent::select($name, $list, $selected, $options);
+	}
+
+	protected function checkableSet($type, $name, $value, $checked, $options)
+	{
+		$options = $this->converter->convert(Helper::getFormAttribute($name)) + $options;
+		return parent::checkable($type, $name, $value, $checked, $options);
+	}
+	*/
 
 
 
